@@ -91,10 +91,10 @@ function OnTick()
 	SpellChecks()
 	target = ts:GetTarget(Spells.Q.range)
 
-	if Menu.combo.combo:IsPressed() == true then
+	if Menu.comboKey:IsPressed() == true then
 		activeClass:Combo()
 	end
-	if Menu.harass.harass:IsPressed() == true then
+	if Menu.harassKey:IsPressed() == true then
 		activeClass:Harass()
 	end
 
@@ -203,9 +203,6 @@ function InitializeGlobalVariables()
 	-- Making table for KillText
 	KillText = {}
 
-	-- For Autolevel
-	lastLevel = 0
-
 	-- Soon™
 	--EnemyMinions = MinionManager.new(MinionManager.Mode.ENEMY, Spells.W.range, myHero, MinionManager.Sort.HEALTH_DEC)
 
@@ -227,6 +224,9 @@ function InitializeGlobalVariables()
 				{Game.Slots.SPELL_3, Game.Slots.SPELL_1, Game.Slots.SPELL_2, Game.Slots.SPELL_4},
 				{Game.Slots.SPELL_3, Game.Slots.SPELL_2, Game.Slots.SPELL_1, Game.Slots.SPELL_4}
 	}
+
+	-- For Autolevel
+	lastLevel = myHero.level - 1
 end
 
 function SpellChecks()
@@ -269,7 +269,7 @@ function AutoHeal()
 	end
 end 
 
-function LeBlanc:Zhonyas()
+function Zhonyas()
 	if Menu.misc.zhonyas.zhonyasunder:Value() >= myHero.health / myHero.maxHealth then
 		CastItem(3157)
 	end
@@ -279,30 +279,45 @@ function GetIgniteDamage()
 	return (50 + (20 * myHero.level))
 end 
 
+function DrawFont(msg)
+	return "<font color=\"#80E680\">" .. msg .. "</font>" 
+
 function DrawGlobalMenu()
 	Menu = MenuConfig("Totally Series " .. champ)
 
+	Menu:Section("info", DrawFont("Script Info"))
+	Menu:Info("script", "Loaded: <font color=\"#99B2FF\">Totally " .. champ .. "</font>")
+	Menu:Info("author", "Author: <font color=\"#99B2FF\">Totally Legit</font>")
+
+	Menu:Section("keybinding", DrawFont("Key Bindings"))
+	Menu:KeyBinding("comboKey", "Combo Key", "SPACE")
+	Menu:KeyBinding("harassKey", "Harass Key", "T")
+	Menu:KeyBinding("farmKey", "Farm Key", "K")
+	Menu.farmKey:Toggle(true)
+	Menu:KeyBinding("laneclearKey", "LaneClear Key", "L")
+
 	-- Combo
-	Menu:Menu("combo", name ..  "Combo")
-	Menu.combo:KeyBinding("combo", "Combo Key", "SPACE")
-	Menu.combo:Boolean("comboItems", "Use Items", true)
+	Menu:Section("combo", DrawFont("Combo Settings"))
+	Menu:Boolean("comboItems", "Use Items", true)
+	Menu:Menu("combo", "Other Combo settings")
 
 	-- Harass
-	Menu:Menu("harass", name .. "Harass")
-	Menu.harass:KeyBinding("harass", "Harass Key", "T")
+	Menu:Section("harass", DrawFont("Harass Settings"))
+	Menu:Menu("harass", "Spells")
 
 	-- Farming
-	Menu:Menu("farm", name .. "Farm")
-	Menu.farm:KeyBinding("farm", "Farm Key", "K")
-	Menu.farm.farm:Toggle(true)
-
+	Menu:Section("farm", DrawFont("Farming Settings"))
+	Menu:Menu("farm", "Spells")
 	-- Laneclear
-	Menu:Menu("laneclear", name .. "LaneClear")
-	Menu.laneclear:KeyBinding("laneclear", "LaneClear Key", "L")
+	Menu:Section("laneclear", DrawFont("LaneClear Settings"))
+	Menu:Menu("laneclear", "Spells")
 
 	-- Drawings
-	Menu:Menu("draw", name .. "Drawings")
+	Menu:Section("drawing", DrawFont("Draw Settings"))
+	Menu:Menu("draw", "Drawings")
 	Menu.draw:Boolean("useDrawings", "Draw", true)
+
+	Menu:Section("spellspecific", DrawFont("Champ Specific Settings"))
 
 end
 
@@ -338,15 +353,15 @@ function DrawGlobalMisc()
 	Menu.misc.autopotions:Slider("manaPerc", "Min Mana % to use Potion", 0.60, 0, 1, 0.01)
 
 	Menu.misc:Menu("zhonyas", "Zhonyas")
- 	Menu.misc.zhonyas:Boolean("zhonyas", "Auto Zhonyas", SCRIPT_PARAM_ONOFF, true)
- 	Menu.misc.zhonyas:Slider("zhonyasunder", "Use Zhonyas under % health", SCRIPT_PARAM_SLICE, 0.20, 0, 1 ,2)
+ 	Menu.misc.zhonyas:Boolean("zhonyas", "Auto Zhonyas", true)
+ 	Menu.misc.zhonyas:Slider("zhonyasunder", "Use Zhonyas under % health", 0.20, 0, 1, 2)
 
 	Menu.misc:Menu("autolevel", "Auto Level Skills")
 	Menu.misc.autolevel:Boolean("autolevel", "Auto Level Spells", false)
-	Menu.misc.autolevel:info("level1", "Level 1 - 4")
-	Menu.misc.autolevel:Dropdown("level1sequence", "Level sequence", 1, {"Q-W-E-R", "Q-E-W-R", "W-Q-E-R", "W-E-Q-R", "E-Q-W-R", "E-W-Q-R"})
-	Menu.misc.autolevel:info("level2", "Level 4 - 18")
-	Menu.misc.autolevel:Dropdown("level1sequence2", "Level sequence", 1, {"Q-W-E-R", "Q-E-W-R", "W-Q-E-R", "W-E-Q-R", "E-Q-W-R", "E-W-Q-R"})
+	Menu.misc.autolevel:Info("level1", "Level 1 - 4")
+	Menu.misc.autolevel:DropDown("level1sequence", "Level sequence", 1, {"Q-W-E-R", "Q-E-W-R", "W-Q-E-R", "W-E-Q-R", "E-Q-W-R", "E-W-Q-R"})
+	Menu.misc.autolevel:Info("level2", "Level 4 - 18")
+	Menu.misc.autolevel:DropDown("level2sequence", "Level sequence", 1, {"Q-W-E-R", "Q-E-W-R", "W-Q-E-R", "W-E-Q-R", "E-Q-W-R", "E-W-Q-R"})
 end
 
 -- Global Drawing settings -- Same in every script -- obv
@@ -366,7 +381,7 @@ function AutoLevel()
 			end
 		else 
 			for i = 1, #levelUpTable[Menu.misc.autolevel.level1sequence:Value()], 1 do
-				local slot = levelUpTable[Menu.misc.autolevel.level1sequence:Value()][i]
+				local slot = levelUpTable[Menu.misc.autolevel.level2sequence:Value()][i]
 				Game.LevelSpell(slot)
 			end
 		end
@@ -488,7 +503,7 @@ end
 
 function Annie:Combo()
 	if target ~= nil then
-		if Menu.combo.comboItems:Value() == true then
+		if Menu.comboItems:Value() == true then
 			UseItems(target)
 		end
 		if Menu.combo.comboWay:Value() == 1 then
@@ -630,13 +645,13 @@ function Annie:HasMana(input)
 	elseif input == "R" then
 		return myHero.mana > myHero:GetSpellData(Game.Slots.SPELL_4).mana
 	elseif input == "QW" then
-		return myHero.mana > (myHero:GetSpellData(Game.Slots.SPELL_1).mana + myHero:GetSpellData(Game.Slots.SPELL_2))
+		return myHero.mana > (myHero:GetSpellData(Game.Slots.SPELL_1).mana + myHero:GetSpellData(Game.Slots.SPELL_2).mana)
 	elseif input == "QR" then
-		return myHero.mana > (myHero:GetSpellData(Game.Slots.SPELL_1).mana + myHero:GetSpellData(Game.Slots.SPELL_2))
+		return myHero.mana > (myHero:GetSpellData(Game.Slots.SPELL_1).mana + myHero:GetSpellData(Game.Slots.SPELL_2).mana)
 	elseif input == "WR" then
-		return myHero.mana > (myHero:GetSpellData(Game.Slots.SPELL_2).mana + myHero:GetSpellData(Game.Slots.SPELL_4))
+		return myHero.mana > (myHero:GetSpellData(Game.Slots.SPELL_2).mana + myHero:GetSpellData(Game.Slots.SPELL_4).mana)
 	elseif input == "QWR" then
-		return myHero.mana > (myHero:GetSpellData(Game.Slots.SPELL_1).mana + myHero:GetSpellData(Game.Slots.SPELL_2) + myHero:GetSpellData(Game.Slots.SPELL_4))
+		return myHero.mana > (myHero:GetSpellData(Game.Slots.SPELL_1).mana + myHero:GetSpellData(Game.Slots.SPELL_2).mana + myHero:GetSpellData(Game.Slots.SPELL_4).mana)
 	end
 	return true
 end
@@ -824,7 +839,7 @@ end
 function Swain:Combo()
 	if myHero.dead then return end
 	if target ~= nil then
-		if Menu.combo.comboItems:Value() == true then
+		if Menu.comboItems:Value() == true then
 			UseItems(target)
 		end
 
@@ -1012,7 +1027,7 @@ end
 function LeBlanc:Combo()
 	if myHero.dead then return end
 	if target ~= nil and ValidTarget(target) then
-		if Menu.combo.comboItems:Value() == true then
+		if Menu.comboItems:Value() == true then
 			UseItems(target)
 		end
 		if Menu.combo.comboWay == 1 then
@@ -1211,7 +1226,6 @@ end
 function LeBlanc:ExtraMenu()
 
 	-- Combo
-	Menu.combo:Boolean("comboItems", "Use Items", true)
 	Menu.combo:Slider("comboWay", "Perform Combo:", 1, {"Smart", "QRWE", "QWRE", "WQRE", "WRQE"})
 
 	-- Harass
@@ -1310,7 +1324,7 @@ end
 function Blitzcrank:Combo()
 	if myHero.dead then return end
 	if target ~= nil then
-		if Menu.combo.comboItems:Value() == true then
+		if Menu.comboItems:Value() == true then
 			UseItems(target)
 		end
 		if Menu.combo.comboE:Value() == true then
@@ -1334,12 +1348,6 @@ function Blitzcrank:Harass()
 		if Menu.harass.harassE:Value() == true then
 			self.E:Cast(target)
 		end
-	end
-end
-
-function self.Interrupt:Callback(unit)
-	if ValidTarget(unit) then
-		self.Q:Cast(unit)
 	end
 end
 
@@ -1455,7 +1463,7 @@ function Ryze:Combo()
 end
 
 function Ryze:ComboBurst(target)
-	if Menu.combo.comboItems:Value() == true then
+	if Menu.comboItems:Value() == true then
 		UseItems(target)
 	end
 	if Menu.combo.comboQ:Value() == true then
@@ -1514,18 +1522,12 @@ function Ryze:KillSteal()
 	end
 end
 
-function self.Gapcloser:Callback(unit)
-	if myHero:DistanceTo(unit) < Spells.W.range then
-		self.W:Cast(unit)
-	end
-end
-
 function Ryze:ExtraMenu()
 	-- Combo
 	Menu.combo:Boolean("comboQ", "Use " .. Spells.Q.name .. " (Q)", true)
 	Menu.combo:Boolean("comboE", "Use " .. Spells.E.name .. " (E)", true)
 	Menu.combo:Boolean("comboR", "Use " .. Spells.R.name .. " (R)", true)
-	Menu.combo:Dropdown("comboMode", "Mode", 1, {"Burst", "Long"})
+	Menu.combo:DropDown("comboMode", "Mode", 1, {"Burst", "Long"})
 
 	-- Harass
 	Menu.harass:Boolean("harassQ", "Use " .. Spells.Q.name .. " (Q)", true)
@@ -1596,7 +1598,7 @@ end
 function Lux:Combo()
 	if myHero.dead then return end
 	if target ~= nil and ValidTarget(target) then
-		if Menu.combo.comboItems:Value() == true then
+		if Menu.comboItems:Value() == true then
 			UseItems(target)
 		end
 	end
@@ -1749,7 +1751,7 @@ function TargetSelector:__init(mode, range, menu)
 	self.range = range
 	if menu then
 		self:LoadToMenu(menu)
-		self.mode = self.menu.targetselector.mode:Value()
+		self.mode = self.menu.mode:Value()
 	end
 	self.selected = nil
 	Callback.Bind("WndMsg", function(msg, key) self:OnWndMsg(msg, key) end)
@@ -1772,7 +1774,7 @@ function TargetSelector:OnWndMsg(msg, key)
 end
 
 function TargetSelector:GetTarget(range)
-	self.mode = self.menu.targetselector.mode:Value()
+	self.mode = self.menu.mode:Value()
 	local range = range and range or self.range
 	local target = nil
 	if self.selected and self.selected.type == myHero.type and myHero:DistanceTo(self.selected) <= self.range then return self.selected end
@@ -1867,7 +1869,7 @@ function TargetSelector:Mode5(range)
 			end
 			-- PRIORITY
 			if self.mode == 5 then
-				if self.menu.targetselector[hero.charName]:Value() < self.menu.targetselector[target.charName]:Value() then
+				if self.menu.prioritysettings[hero.charName]:Value() < self.menu.prioritysettings[target.charName]:Value() then
 					target = hero
 				end
 			end
@@ -1878,21 +1880,19 @@ end
 
 function TargetSelector:LoadToMenu(menu)
 	self.menu = menu
-	self.menu:Menu("targetselector", "TargetSelector")
+	self.menu:Section("targetselectorsection", DrawFont("Target Selector"))
 	if self.mode == "LESS_HP" then
-		self.menu.targetselector:DropDown("mode", "TargetSelector: ", 1, {"LESS_HP", "LESS_AD", "LESS_AP", "MOST_DAMAGE", "PRIORITY"})
+		self.menu:DropDown("mode", "Mode: ", 1, {"LESS_HP", "LESS_AD", "LESS_AP", "MOST_DAMAGE", "PRIORITY"})
 	elseif self.mode == "LESS_AD" then
-		self.menu.targetselector:DropDown("mode", "TargetSelector: ", 2, {"LESS_HP", "LESS_AD", "LESS_AP", "MOST_DAMAGE", "PRIORITY"})
+		self.menu:DropDown("mode", "Mode: ", 2, {"LESS_HP", "LESS_AD", "LESS_AP", "MOST_DAMAGE", "PRIORITY"})
 	elseif self.mode == "LESS_AP" then
-		self.menu.targetselector:DropDown("mode", "TargetSelector: ", 3, {"LESS_HP", "LESS_AD", "LESS_AP", "MOST_DAMAGE", "PRIORITY"})
+		self.menu:DropDown("mode", "Mode: ", 3, {"LESS_HP", "LESS_AD", "LESS_AP", "MOST_DAMAGE", "PRIORITY"})
 	elseif self.mode == "MOST_DAMAGE" then
-		self.menu.targetselector:DropDown("mode", "TargetSelector: ", 4, {"LESS_HP", "LESS_AD", "LESS_AP", "MOST_DAMAGE", "PRIORITY"})
+		self.menu:DropDown("mode", "Mode: ", 4, {"LESS_HP", "LESS_AD", "LESS_AP", "MOST_DAMAGE", "PRIORITY"})
 	end
-	for i = 1, Game.HeroCount(), 1 do
-		local hero = Game.Hero(i)
-		if myHero.team ~= hero.team then
-			self.menu.targetselector:Slider(hero.charName, hero.charName, 1, 1, 5, 0)
-		end
+	self.menu:Menu("prioritysettings", "Priority Settings")
+	for i, hero in ipairs(EnemyTable) do
+		self.menu.prioritysettings:Slider(hero.charName, hero.charName, 1, 1, 5, 0)
 	end
 end
 
@@ -1990,7 +1990,7 @@ end
 
 
 class 'Interrupter'
-function Interrupter:__init(menu)
+function Interrupter:__init(menu, cb)
 	self.interrupt = {
 						["KatarinaR"]                  = { charName = "Katarina",     duration = 2.5},
 					    ["Meditate"]                   = { charName = "MasterYi",     duration = 2.5},
@@ -2010,6 +2010,12 @@ function Interrupter:__init(menu)
 	self.ActiveSpells = {}
 
 	self:ApplyToMenu(menu)
+
+	self.callbacks = {}
+
+	if cb then
+		table.insert(self.callbacks, cb)
+	end
 
 	Callback.Bind("Tick", function() self:OnTick() end)
 	Callback.Bind("ProcessSpell", function(unit, spell) self:OnProcessSpell(unit, spell) end)
@@ -2035,7 +2041,9 @@ function Interrupter:ApplyToMenu(menu)
 end
 
 function Interrupter:Callback(unit)
-	callback(unit)
+	for i, cb in ipairs(self.callbacks) do
+		cb(unit)
+	end
 end
 
 function Interrupter:OnProcessSpell(unit, spell)
@@ -2059,7 +2067,7 @@ end
 
 
 class 'Gapcloser'
-function Gapcloser:__init(menu)
+function Gapcloser:__init(menu, cb)
 	self.GapcloserSpells = {
 							["aatroxq"]              = {charName = "Aatrox", spell = "Q"},
 						    ["akalishadowdance"]     = {charName = "Akali", spell = "R"},
@@ -2108,6 +2116,12 @@ function Gapcloser:__init(menu)
 		self:ApplyToMenu(menu)
 	end
 
+	self.callbacks = {}
+
+	if cb then
+		table.insert(self.callbacks, cb)
+	end
+
 	Callback.Bind("ProcessSpell", function(unit, spell) self:OnProcessSpell(unit, spell) end)
 end
 
@@ -2128,8 +2142,11 @@ function Gapcloser:ApplyToMenu(menu)
 end
 
 function Gapcloser:Callback(unit)
-	callback(unit)
+	for i, cb in ipairs(self.callbacks) do
+		cb(unit)
+	end
 end
+
 
 function Gapcloser:OnProcessSpell(unit, spell)
 	if self.Menu.gapcloser then
@@ -2171,7 +2188,7 @@ function GetEnemyHeroes()
 	local enemies = {}
 	for i = 1, Game.HeroCount(), 1 do
 		local hero = Game.Hero(i)
-		if ValidTarget(hero) then
+		if hero.team ~= myHero.team and hero.type == myHero.type then
 			table.insert(enemies, hero)
 		end
 	end
