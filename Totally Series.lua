@@ -106,16 +106,14 @@ function OnTick()
 		AutoIgnite()
 	end
 
-	if Menu.misc.autopotions.usePotions:Value() == true then
-		if not usingHealthPot and Menu.misc.autopotions.useHealthPotion:Value() == true then
-			if myHero.health / myHero.maxHealth <= Menu.misc.autopotions.hpPerc:Value() then
-				CastItem(2003)
-			end
+	if not usingHealthPot and Menu.misc.autopotions.useHealthPotion:Value() == true then
+		if myHero.health / myHero.maxHealth <= Menu.misc.autopotions.hpPerc:Value() then
+			CastItem(2003)
 		end
-		if not usingManaPot and Menu.misc.autopotions.useManaPotion:Value() == true then
-			if myHero.mana / myHero.maxMana <= Menu.misc.autopotions.manaPerc:Value() then
-				CastItem(2004)
-			end
+	end
+	if not usingManaPot and Menu.misc.autopotions.useManaPotion:Value() == true then
+		if myHero.mana / myHero.maxMana <= Menu.misc.autopotions.manaPerc:Value() then
+			CastItem(2004)
 		end
 	end
 
@@ -158,7 +156,7 @@ end
 
 function OnDraw()
 	if myHero.dead then return end
-	if Menu.draw.useDrawings:Value() == true then
+	if Menu.useDrawings:Value() == true then
 		if Spells.Q.range and Menu.draw.drawQ:Value() == true then
 			Graphics.DrawCircle(myHero.x, myHero.y, myHero.z, Spells.Q.range, Graphics.RGB(100, 200, 150):ToNumber())
 		end
@@ -280,16 +278,17 @@ function GetIgniteDamage()
 end 
 
 function DrawFont(msg)
-	return "<font color=\"#80E680\">" .. msg .. "</font>" 
+	return "<font color=\"#99EBD6\">" .. tostring(msg) .. "</font>" 
+end
 
 function DrawGlobalMenu()
 	Menu = MenuConfig("Totally Series " .. champ)
 
 	Menu:Section("info", DrawFont("Script Info"))
-	Menu:Info("script", "Loaded: <font color=\"#99B2FF\">Totally " .. champ .. "</font>")
-	Menu:Info("author", "Author: <font color=\"#99B2FF\">Totally Legit</font>")
+	Menu:Info("script", "Loaded: <i><font color=\"#99B2FF\">Totally " .. champ .. "</font></i>")
+	Menu:Info("author", "Author: <i><font color=\"#99B2FF\">Totally Legit</font></i>")
 
-	Menu:Section("keybinding", DrawFont("Key Bindings"))
+	Menu:Section("keybindingSection", DrawFont("Key Bindings"))
 	Menu:KeyBinding("comboKey", "Combo Key", "SPACE")
 	Menu:KeyBinding("harassKey", "Harass Key", "T")
 	Menu:KeyBinding("farmKey", "Farm Key", "K")
@@ -297,25 +296,26 @@ function DrawGlobalMenu()
 	Menu:KeyBinding("laneclearKey", "LaneClear Key", "L")
 
 	-- Combo
-	Menu:Section("combo", DrawFont("Combo Settings"))
+	Menu:Section("comboSection", DrawFont("Combo Settings"))
 	Menu:Boolean("comboItems", "Use Items", true)
 	Menu:Menu("combo", "Other Combo settings")
 
 	-- Harass
-	Menu:Section("harass", DrawFont("Harass Settings"))
-	Menu:Menu("harass", "Spells")
+	Menu:Section("harassSecton", DrawFont("Harass Settings"))
+	Menu:Menu("harass", "Preferences")
 
 	-- Farming
-	Menu:Section("farm", DrawFont("Farming Settings"))
-	Menu:Menu("farm", "Spells")
+	Menu:Section("farmSection", DrawFont("Farming Settings"))
+	Menu:Menu("farm", "Preferences")
+
 	-- Laneclear
-	Menu:Section("laneclear", DrawFont("LaneClear Settings"))
-	Menu:Menu("laneclear", "Spells")
+	Menu:Section("laneclearSection", DrawFont("LaneClear Settings"))
+	Menu:Menu("laneclear", "Preferences")
 
 	-- Drawings
-	Menu:Section("drawing", DrawFont("Draw Settings"))
-	Menu:Menu("draw", "Drawings")
-	Menu.draw:Boolean("useDrawings", "Draw", true)
+	Menu:Section("drawingSection", DrawFont("Draw Settings"))
+	Menu:Boolean("useDrawings", "Draw", true)
+	Menu:Menu("draw", "Preferences")
 
 	Menu:Section("spellspecific", DrawFont("Champ Specific Settings"))
 
@@ -346,7 +346,6 @@ function DrawGlobalMisc()
 	end 
 
 	Menu.misc:Menu("autopotions", "Auto Potions")
-	Menu.misc.autopotions:Boolean("usePotions", "Automatically Use Potions", true)
 	Menu.misc.autopotions:Boolean("useHealthPotion", "Use Health Potion", true)
 	Menu.misc.autopotions:Slider("hpPerc", "Min Health % to use Potion", 0.60, 0, 1, 0.01)
 	Menu.misc.autopotions:Boolean("useManaPotion", "Use Mana Potion", true)
@@ -358,14 +357,15 @@ function DrawGlobalMisc()
 
 	Menu.misc:Menu("autolevel", "Auto Level Skills")
 	Menu.misc.autolevel:Boolean("autolevel", "Auto Level Spells", false)
-	Menu.misc.autolevel:Info("level1", "Level 1 - 4")
+	Menu.misc.autolevel:Section("level1", DrawFont("Level 1 - 4"))
 	Menu.misc.autolevel:DropDown("level1sequence", "Level sequence", 1, {"Q-W-E-R", "Q-E-W-R", "W-Q-E-R", "W-E-Q-R", "E-Q-W-R", "E-W-Q-R"})
-	Menu.misc.autolevel:Info("level2", "Level 4 - 18")
+	Menu.misc.autolevel:Section("level2", DrawFont("Level 4 - 18"))
 	Menu.misc.autolevel:DropDown("level2sequence", "Level sequence", 1, {"Q-W-E-R", "Q-E-W-R", "W-Q-E-R", "W-E-Q-R", "E-Q-W-R", "E-W-Q-R"})
 end
 
 -- Global Drawing settings -- Same in every script -- obv
 function DrawGlobalDrawings()
+	Menu.draw:Section("drawingSection2", DrawFont("Spell Settings"))
 	Menu.draw:Boolean("drawQ", "Draw " .. Spells.Q.name .. " range", true)
 	Menu.draw:Boolean("drawW", "Draw " .. Spells.W.name .. " range", true)
 	Menu.draw:Boolean("drawE", "Draw " .. Spells.E.name .. " range", true)
@@ -728,42 +728,48 @@ end
 
 function Annie:ExtraMenu()
 	-- Combo
-	Menu.combo:DropDown("comboWay", "Combo", 1, {"QWR", "QRW", "WQR", "WRQ", "RQW", "RWQ"})
+	Menu.combo:Section("comboSection", DrawFont("Spell Settings"))
 	Menu.combo:Boolean("comboQ", "Use " .. Spells.Q.name .. " (Q)", true)
 	Menu.combo:Boolean("comboW", "Use " .. Spells.W.name .. " (Q)", true)
 	Menu.combo:Boolean("comboR", "Use " .. Spells.R.name .. " (R)", true)
+	Menu.combo:Section("comboSection2", DrawFont("Modes"))
+	Menu.combo:DropDown("comboWay", "Combo", 1, {"QWR", "QRW", "WQR", "WRQ", "RQW", "RWQ"})
 	Menu.combo:Menu("rsettings", "R Settings")
 	Menu.combo.rsettings:DropDown("mode", "R Cast Mode", 1, {"Instantly", "Killable", "Stun"})
 
 	-- Auto R
 	Menu:Menu("autoR", name .. "Auto R")
+	Menu.autoR:Section("autoRSection", DrawFont("Activation"))
+	Menu.autoR:Boolean("autoUlt", "Use Automatic R", true)
+	Menu.autoR:Section("autoRSection2", DrawFont("Optional"))
 	Menu.autoR:Menu("optional", "Optional Settings")
 	Menu.autoR.optional:Boolean("useOptional", "Use Optional Settings", true)
 	Menu.autoR.optional:Slider("allies", "Min Allies Nearby", 3, 0, 5, 1)
 	Menu.autoR.optional:Slider("alliesrange", "Range of enemies", 500, 0, 2000, 100)
-	Menu.autoR:Boolean("autoUlt", "Use Automatic R", true)
 	Menu.autoR:Slider("amount", "Min targets", 3, 1, 5, 1)
 
 	-- Extra harass settings
-	Menu.harass:Boolean("harassQ", "Use " .. Spells.Q.name .. " (Q)", true)
-	Menu.harass:Boolean("harassW", "Use " .. Spells.W.name .. " (W)", true)
-	Menu.harass:Boolean("harassR", "Use " .. Spells.R.name .. " (R)", true)
+	Menu.harass:Boolean("harassQ", Spells.Q.name .. " (Q)", true)
+	Menu.harass:Boolean("harassW", Spells.W.name .. " (W)", true)
+	Menu.harass:Boolean("harassR", Spells.R.name .. " (R)", true)
 
 	-- Autokill settings
 	Menu:Menu("autokill", name .. "Autokill")
+	Menu.autokill:Section("autokillSection", DrawFont("Activation"))
 	Menu.autokill:Boolean("autokill", "Perform AutoKill", false)
-	Menu.autokill:Boolean("autokillQ", "Use " .. Spells.Q.name .. " (Q)", true)
-	Menu.autokill:Boolean("autokillW", "Use " .. Spells.W.name .. " (W)", true)
-	Menu.autokill:Boolean("autokillR", "Use " .. Spells.R.name .. " (R)", true)
+	Menu.autokill:Section("autokillSection2", DrawFont("Spell Settings"))
+	Menu.autokill:Boolean("autokillQ", Spells.Q.name .. " (Q)", true)
+	Menu.autokill:Boolean("autokillW", Spells.W.name .. " (W)", true)
+	Menu.autokill:Boolean("autokillR", Spells.R.name .. " (R)", true)
 	Menu.autokill:Boolean("autokillIgnite", "Use IGNITE", true)
 
 	-- Farm
-	Menu.farm:Boolean("farmQ", "Use" .. Spells.Q.name .. " (Q)", true)
-	Menu.farm:Boolean("farmW", "Use" .. Spells.W.name .. " (Q)", true)
+	Menu.farm:Boolean("farmQ", Spells.Q.name .. " (Q)", true)
+	Menu.farm:Boolean("farmW", Spells.W.name .. " (Q)", true)
 
 	-- Laneclear
-	Menu.laneclear:Boolean("laneclearQ", "Use" .. Spells.Q.name .. " (Q)", true)
-	Menu.laneclear:Boolean("laneclearW", "Use" .. Spells.W.name .. " (Q)", true)
+	Menu.laneclear:Boolean("laneclearQ ", Spells.Q.name .. " (Q)", true)
+	Menu.laneclear:Boolean("laneclearW ", Spells.W.name .. " (Q)", true)
 
 	-- Misc
 	Menu:Menu("misc", name .. "Misc")
@@ -773,6 +779,7 @@ function Annie:ExtraMenu()
 
 
 	--Draws
+	Menu.draw:Separator()
 	Menu.draw:Boolean("drawKilltext", "Draw KillText", false)
 
 
@@ -1249,6 +1256,7 @@ function LeBlanc:ExtraMenu()
 	Menu.laneclear:Boolean("laneclearR", "Use " .. Spells.R.name .. " (R)", true)
 
 	--Drawings
+	Menu.draw:Separator()
 	Menu.draw:Boolean("drawKilltext", "Draw KillText", false)
 	
 	-- Killsteal settings
@@ -1330,7 +1338,7 @@ function Blitzcrank:Combo()
 		if Menu.combo.comboE:Value() == true then
 			self.E:Cast(target)
 		end
-		if Menu.combo.comboQ:Value() == true then
+		if Menu.combo.comboQ:Value() == true and Menu.combo.comboBlock[target.charName]:Value() == false then
 			self.Q:Cast(target)
 		end
 		if Menu.combo.comboR:Value() == true and CountEnemies(Spells.R.range) >= Menu.combo.comboRx:Value() then
@@ -1377,7 +1385,12 @@ function Blitzcrank:ExtraMenu()
 	Menu.combo:Boolean("comboQ", "Use " .. Spells.Q.name .. " (Q)", true)
 	Menu.combo:Boolean("comboE", "Use " .. Spells.E.name .. " (E)", true)
 	Menu.combo:Boolean("comboR", "Use " .. Spells.R.name .. " (R)", true)
+	Menu.combo:Section("comboSection2", DrawFont("Modes"))
 	Menu.combo:Slider("comboRx", "Min amount of people nearby to cast R", 1, 1, 5, 0)
+	Menu.combo:Menu("comboBlock", "Block Q List")
+	for i, enemy in ipairs(EnemyTable) do 
+		Menu.combo.comboBlock:Boolean(enemy.charName, "Block Q on " .. enemy.charName, false)
+	end
 
 	-- Harass
 	Menu.harass:Boolean("harassQ", "Use " .. Spells.Q.name .. " (Q)", true)
@@ -1390,20 +1403,31 @@ function Blitzcrank:ExtraMenu()
 
 	-- Auto R
 	Menu:Menu("autoR", "Automatic R")
+	Menu.autoR:Section("autoRSection", DrawFont("Activation"))
 	Menu.autoR:Boolean("autoR", "Automatically Activate R")
+	Menu.autoR:Section("autoRSection2", DrawFont("Modes"))
 	Menu.autoR:Slider("autoRx", "Enemies In Range to R", 5, 1, 5, 0)
 
 	-- KillSteal settings
 	Menu:Menu("killsteal", name .. "KillSteal")
+	Menu.killsteal:Section("killstealSection", DrawFont("Activation"))
 	Menu.killsteal:Boolean("killsteal", "Perform KillSteal", false)
+	Menu.killsteal:Section("killstealSection2", DrawFont("Spell Settings"))
 	Menu.killsteal:Boolean("killstealQ", "Use " .. Spells.Q.name .. " (Q)", true)
 	Menu.killsteal:Boolean("killstealR", "Use " .. Spells.R.name .. " (R)", true)
 
 	-- Misc
 	Menu:Menu("misc", name .. "Misc")
 	Menu.misc:Menu("interrupt", "Interrupter")
-	self.Interrupt = Interrupter(Menu.misc.interrupt)
+	Interrupter(Menu.misc.interrupt, self:BlitzInterrupter(unit))
 end
+
+function BlitzCrank:BlitzInterrupter(unit)
+	if ValidTarget(unit) then
+		self.Q:Cast(unit)
+	end
+end
+
 
 
 
@@ -1443,9 +1467,23 @@ function Ryze:__init()
 	ts = TargetSelector("LESS_AP", Spells.Q.range, Menu) 
 
 	Callback.Bind("Tick", function() self:OnTick() end)
+	Callback.Bind("Draw", function() self:OnDraw() end)
 end
 
+function Ryze:OnDraw()
+	if Menu.draw.drawKilltext:Value() == true then
+		for i, enemy in ipairs(EnemyTable) do
+	 		if ValidTarget(enemy) then
+	 			local barPos = Graphics.WorldToScreen(Gemotry.Vector3(enemy.x, enemy.y, enemy.z))
+				local PosX = barPos.x - 35
+				local PosY = barPos.y - 50  
+				Graphics.DrawText(KillText[i], 10, PosX, PosY, Graphics.ARGB(255,255,204,0))
+			end 
+		end 
+	end 
+end
 function Ryze:OnTick()
+	self:CalcDamageCalculations()
 	if Menu.killsteal.killsteal:Value() == true then
 		self:KillSteal()
 	end
@@ -1511,8 +1549,9 @@ end
 function Ryze:KillSteal()
 	for i, hero in ipairs(EnemyTable) do
 		if ValidTarget(hero) then
-			local Qdmg = Spells.Q.ready and CalculateAPDamage("Q", 20, 20, 0.4, hero)
-			local Wdmg = Spells.W.ready and CalculateAPDamage("W", 25, 35, 0.6, hero)
+			local Qdmg = Spells.Q.ready and self:CalculateAPDamage("Q", hero)
+			local Wdmg = Spells.W.ready and self:CalculateAPDamage("W", hero)
+			local Edmg = Spells.E.ready and self:CalculateAPDamage("E", hero)
 			if Qdmg > enemy.health then
 				self.Q:Cast(hero)
 			elseif Wdmg > enemy.health then
@@ -1522,11 +1561,57 @@ function Ryze:KillSteal()
 	end
 end
 
+function Ryze:CalculateAPDamage(skill, target)
+	local dmg = 0
+	if skill == "Q" then
+		dmg = 20 * myHero:GetSpellData(Game.Slots.SPELL_1).level + 20 + 0.4 * myHero.ap
+		dmg = dmg + ((myHero.maxMana / 100) * 6.5)
+	elseif skill == "W" then
+		dmg = 25 * myHero:GetSpellData(Game.Slots.SPELL_2).level + 35 + 0.6 * myHero.ap
+		dmg = dmg + ((myHero.maxMana / 100) * 4.5)
+	elseif skill == "E" then
+		dmg = 30 * myHero:GetSpellData(Game.Slots.SPELL_3).level + 20 + 0.35 * myHero.ap
+		dmg = dmg + ((myHero.maxMana / 100) * 1)
+	end
+	return myHero:CalcMagicDamage(target, dmg)
+end
+
+function Ryze:CalcDamageCalculations()
+	for i, enemy in ipairs(EnemyTable) do
+		if ValidTarget(hero) then
+			local Qdmg = Spells.Q.ready and self:CalculateAPDamage("Q", hero)
+			local Wdmg = Spells.W.ready and self:CalculateAPDamage("W", hero)
+			local Edmg = Spells.E.ready and self:CalculateAPDamage("E", hero)
+			if myHero.totalDamage > enemy.health then
+				KillText[i] = "Murder him"
+			elseif Qdmg > enemy.health then
+				KillText[i] = "Q = kill"
+			elseif Wdmg > enemy.health then
+				KillText[i] = "W = kill"
+			elseif (Edmg * 2) > enemy.health then
+				KillText[i] = "2E = kill"
+			elseif Qdmg + Wdmg > enemy.health then
+				KillText[i] = "Q + W = kill"
+			elseif Qdmg + Wdmg + Edmg > enemy.health then
+				KillText[i] = "Q + W + E = kill"
+			elseif Qdmg + Wdmg + Qdmg > enemy.health then
+				KillText[i] = "Q + W + Q = kill"
+			elseif Qdmg + Wdmg + Edmg + Qdmg > enemy.health then
+				KillText[i] = "Q + W + E + Q = kill"
+			else
+				KillText[i] = "Harass him"
+			end
+		end
+	end
+end
+
 function Ryze:ExtraMenu()
 	-- Combo
+	Menu.combo:Section("comboSection", DrawFont("Spell Settings"))
 	Menu.combo:Boolean("comboQ", "Use " .. Spells.Q.name .. " (Q)", true)
 	Menu.combo:Boolean("comboE", "Use " .. Spells.E.name .. " (E)", true)
 	Menu.combo:Boolean("comboR", "Use " .. Spells.R.name .. " (R)", true)
+	Menu.combo:Section("comboMode", DrawFont("Modes"))
 	Menu.combo:DropDown("comboMode", "Mode", 1, {"Burst", "Long"})
 
 	-- Harass
@@ -1540,15 +1625,18 @@ function Ryze:ExtraMenu()
 
 	-- KillSteal settings
 	Menu:Menu("killsteal", name .. "KillSteal")
+	Menu.killsteal:Section("killstealSection", DrawFont("Activation"))
 	Menu.killsteal:Boolean("killsteal", "Perform KillSteal", false)
+	Menu.killsteal:Section("killstealSection2", DrawFont("Spell Settings"))
 	Menu.killsteal:Boolean("killstealQ", "Use " .. Spells.Q.name .. " (Q)", true)
 	Menu.killsteal:Boolean("killstealW", "Use " .. Spells.W.name .. " (Q)", true)
 
 	-- Misc
 	Menu:Menu("misc", name .. "Misc")
-	Menu.misc:Menu("gapcloser", "GapCloser")
-	self.Gapcloser = Gapcloser(Menu.misc.gapcloser)
-	Menu.misc.gapcloser:Boolean("useW", "Use W against Gapcloser", true)
+
+	--Draws
+	Menu.draw:Separator()
+	Menu.draw:Boolean("drawKilltext", "Draw KillText", false)
 end
 
 
@@ -1574,6 +1662,8 @@ function Lux:__init()
 	self.E:SetSkillShot(Spells.E.delay, Spells.E.radius, Spells.E.speed, true, "aoe")
 
 
+	self.EBall = nil
+
 	-- Initializing TargetSelector
 	ts = TargetSelector("LESS_AP", Spells.Q.range, Menu) 
 			
@@ -1593,6 +1683,22 @@ function Lux:OnTick()
 	if Menu.killsteal.killsteal:Value() == true then
 		self:KillSteal()
 	end
+
+	if self.EBall then
+		self:ProcE()
+	end
+end
+
+function Lux:OnCreateObj(obj)
+    if myHero:DistanceTo(obj) <= 50 then
+    	self.EBall = obj
+    end
+end
+
+function Lux:OnDeleteObj(obj)
+	if obj == self.EBall then
+		self.EBall = nil 
+	end 
 end
 
 function Lux:Combo()
@@ -1604,20 +1710,26 @@ function Lux:Combo()
 	end
 end
 
+function Lux:ProcE()
+	if Spells.E.ready and CountEnemies(Spells.E.radius, self.EBall) then
+		self.E:Cast()
+	end
+end
+
 function Lux:Harass()
 	if myHero.dead then return end
 	if target ~= nil and ValidTarget(target) then
-		if Menu.harass.harassQ:Value() == true then
-			self.Q:Cast()
+		if Menu.harass.harassQ:Value() == true and not (InAARange(target) and TargetHaveBuff(Buffname, target)) then
+			self.Q:Cast(target)
 		end
-		if Menu.harass.harassE:Value() == true then
-			self.E:Cast()
+		if Menu.harass.harassE:Value() == true and not ((InAARange(target) and TargetHaveBuff(Buffname, target))) then
+			self.E:Cast(target)
 		end
 	end
 end
 
-
 function Lux:OnDraw()
+	if myHero.dead then return end
 	if Menu.draw.drawKilltext:Value() == true then
 		for i, enemy in ipairs(EnemyTable) do
 	 		if ValidTarget(enemy) then
@@ -1651,10 +1763,10 @@ function Lux:ExtraMenu()
 
 	--Farming
 	Menu.farm:Boolean("farmQ", "Use " .. Spells.Q.name .. " (Q)", true)
-	Menu.farm:Boolean("farmE", "Use " .. Spells.E.name .. " (W)", true)
+	Menu.farm:Boolean("farmE", "Use " .. Spells.E.name .. " (E)", true)
 
 	-- Laneclear
-	Menu.laneclear:Boolean("laneclearE", "Use " .. Spells.W.name .. " (W)", true)
+	Menu.laneclear:Boolean("laneclearE", "Use " .. Spells.E.name .. " (E)", true)
 
 	--Drawings
 	Menu.draw:Boolean("drawKilltext", "Draw KillText", false)
@@ -2218,8 +2330,7 @@ function CountEnemiesWithinRadius(range, radius)
 	local normalCount = 0
 	local enemyCount = 0
 	local position = nil
-	for i = 1, Game.HeroCount(), 1 do
-		local hero = Game.Hero(i)
+	for i, hero in ipairs(EnemyTable) do
 		if hero.team ~= myHero.team and myHero:DistanceTo(hero) < range and hero.type == myHero.type then
 			enemyCount = 1
 			for i = 1, Game.HeroCount(), 1 do
@@ -2335,4 +2446,19 @@ function CalculateAPDamage(skill, base_damage, damage, APratio, target)
 	return myHero:CalcMagicDamage(target, dmg)
 end
 
+function InAARange(target) 
+	return myHero:DistanceTo(target) <= myHero.range
+end
 
+
+function TargetHaveBuff(Buffname, unit)
+	local hasBuff = false
+	for i = 1, unit.buffCount, 1 do
+		local buff = unit:GetBuff(i)
+		if buff.name == Buffname then
+			hasBuff = true
+			break
+		end
+	end
+	return hasBuff
+end
