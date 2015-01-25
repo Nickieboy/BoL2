@@ -18,7 +18,8 @@ local champions = {
 					["Swain"] = true, 
 					["Leblanc"] = true,
 					["Blitzcrank"] = true,
-					["Ryze"] = true
+					["Ryze"] = true,
+					["Lux"] = true
 				}
 
 local champ = nil
@@ -65,6 +66,8 @@ function OnLoad()
 		activeClass = Blitzcrank()
 	elseif champ == "Ryze" then
 		activeClass = Ryze()
+	elseif champ == "Lux" then
+		activeClass = Lux()
 	end
 
 	--[[ UGLY CODE ENDS HERE --]] --[[ UGLY CODE ENDS HERE --]] --[[ UGLY CODE ENDS HERE --]] --[[ UGLY CODE ENDS HERE --]]
@@ -87,7 +90,6 @@ end
 
 
 function OnTick()
-	Checks()
 	SpellChecks()
 	target = ts:GetTarget(Spells.Q.range)
 
@@ -232,13 +234,6 @@ function SpellChecks()
 	Iready = (ignite ~= nil and myHero:CanUseSpell(ignite) == Game.SpellState.READY)
 end 
 
-function Checks()
-	Spells.Q.ready = (myHero:CanUseSpell(Game.Slots.SPELL_1) == Game.SpellState.READY)
-	Spells.W.ready = (myHero:CanUseSpell(Game.Slots.SPELL_2) == Game.SpellState.READY)
-	Spells.E.ready = (myHero:CanUseSpell(Game.Slots.SPELL_3) == Game.SpellState.READY)
-	Spells.R.ready = (myHero:CanUseSpell(Game.Slots.SPELL_4) == Game.SpellState.READY)
-end
-
 function FindSummoners()
 	heal = myHero:GetSpellData(Game.Slots.SUMMONER_1).name:find("summonerheal") and Game.Slots.SUMMONER_1 or myHero:GetSpellData(Game.Slots.SUMMONER_2).name:find("summonerheal") and Game.Slots.SUMMONER_2
 	ignite = myHero:GetSpellData(Game.Slots.SUMMONER_1).name:find("summonerdot") and Game.Slots.SUMMONER_1 or myHero:GetSpellData(Game.Slots.SUMMONER_2).name:find("summonerdot") and Game.Slots.SUMMONER_2
@@ -298,7 +293,7 @@ function DrawGlobalMenu()
 	-- Combo
 	Menu:Section("comboSection", DrawFont("Combo Settings"))
 	Menu:Boolean("comboItems", "Use Items", true)
-	Menu:Menu("combo", "Other Combo settings")
+	Menu:Menu("combo", "Preferences")
 
 	-- Harass
 	Menu:Section("harassSecton", DrawFont("Harass Settings"))
@@ -469,9 +464,7 @@ end
 
 function Annie:OnProcessSpell(unit, spell)
 	if spell.target == myHero and string.find(spell.name, "BasicAttack") and unit.type == "Obj_AI_Hero" and Menu.misc.autoE.onAA:Value() == true then
-	    if Spells.E.ready then
-	    	self.E:Cast()
-		end
+	    self.E:Cast()
 	end
 end
 
@@ -591,9 +584,9 @@ function Annie:AutoKill()
 	if myHero.dead then return end
 	for i, enemy in ipairs(EnemyTable) do
 		if ValidTarget(enemy) and myHero:DistanceTo(enemy) < Spells.Q.range then
-			local Qdmg = (((Menu.autokill.autokillQ:Value() == true) and Spells.Q.ready and CalculateAPDamage("Q", 35, 45, 0.8, enemy)) or 0)
-			local Wdmg = (((Menu.autokill.autokillW:Value() == true) and Spells.W.ready and CalculateAPDamage("W", 45, 25, 0.85, enemy)) or 0)
-			local Rdmg = (((Menu.autokill.autokillR:Value() == true) and Spells.R.ready and not self.hasTibbers and CalculateAPDamage("R", 125, 50, 0.8, enemy)) or 0)
+			local Qdmg = (((Menu.autokill.autokillQ:Value() == true) and self.Q:CanCast() and CalculateAPDamage("Q", 35, 45, 0.8, enemy)) or 0)
+			local Wdmg = (((Menu.autokill.autokillW:Value() == true) and self.W:CanCast()  and CalculateAPDamage("W", 45, 25, 0.85, enemy)) or 0)
+			local Rdmg = (((Menu.autokill.autokillR:Value() == true) and self.E:CanCast()  and not self.hasTibbers and CalculateAPDamage("R", 125, 50, 0.8, enemy)) or 0)
 			local Idmg = (((Menu.autokill.autokillIgnite:Value() == true) and Iready and GetIgniteDamage()) or 0)
 
 			if Wdmg > Qdmg and Qdmg > enemy.health and self:HasMana("Q") then
@@ -677,9 +670,9 @@ function Annie:CalcDamageCalculations()
 	if myHero.dead then return end
 	for i, enemy in ipairs(EnemyTable) do
 		if ValidTarget(enemy) then
-			local Qdmg = ((Spells.Q.ready and CalculateAPDamage("Q", 35, 45, 0.8, enemy)) or 0)
-			local Wdmg = ((Spells.W.ready and CalculateAPDamage("W", 45, 25, 0.85, enemy)) or 0)
-			local Rdmg = ((Spells.R.ready and not self.hasTibbers and CalculateAPDamage("R", 125, 50, 0.8, enemy)) or 0)
+			local Qdmg = ((self.Q:CanCast() and CalculateAPDamage("Q", 35, 45, 0.8, enemy)) or 0)
+			local Wdmg = ((self.W:CanCast()  and CalculateAPDamage("W", 45, 25, 0.85, enemy)) or 0)
+			local Rdmg = ((self.R:CanCast()  and not self.hasTibbers and CalculateAPDamage("R", 125, 50, 0.8, enemy)) or 0)
 			local Idmg = ((Iready and GetIgniteDamage()) or 0)
 			if myHero:CalcDamage(enemy, myHero.totalDamage) > enemy.health then
 				KillText[i] = "Murder him"
@@ -905,6 +898,9 @@ function Swain:ExtraMenu()
 	Menu.harass:Boolean("harassW", "Use " .. Spells.W.name .. " (W)", true)
 	Menu.harass:Boolean("harassE", "Use " .. Spells.E.name .. " (E)", true)
 
+	-- No Farm
+	Menu.farm:Hide()
+
 	-- Laneclear
 	Menu.laneclear:Boolean("laneclearW", "Use " .. Spells.W.name .. " (W)", true)
 	Menu.laneclear:Boolean("laneclearR", "Use " .. Spells.R.name .. " (R)", true)
@@ -945,7 +941,7 @@ function LeBlanc:__init()
 					["Q"] = {name = "Sigil of Malice", spellname = "LeblancChaosOrb", range = 700, speed = 2000, markTimer = 3.5, activated = 0}, 
 					["W"] = {name = "Distortion", spellname = "LeblancSlide", range = 600, radius = 250, speed = 2000, delay = 0.25, duration = 4, timeActivated = 0, isActivated = false, startPos = myHero.pos}, 
 					["E"] = {name = "Ethereal Chains", spellname = "LeblancSoulShackle", range = 950, speed = 1600, delay = 0.25, radius = 95}, 
-					["R"] = {name = "Mimic", spellname = "LeblancMimic", Qname = "LeblancChaosOrbM", Wname = "LeBlancSlideM",  Wreturnname = "leblancslidereturnm", Ename = "LeblancSoulShackleM"},
+					["R"] = {name = "Mimic", spellname = "LeblancMimic", Qname = "LeblancChaosOrbM", Wname = "LeBlancSlideM",  Wreturnname = "leblancslidereturnm", Ename = "LeblancSoulShackleM", ready = false},
 					["WR"] = {duration = 4, spellname = "LeblancSlideM", timeActivated = 0, isActivated = false, startPos = myHero.pos}
 				}
 
@@ -977,6 +973,7 @@ function LeBlanc:__init()
 end
 
 function LeBlanc:OnTick()
+	self:RCheck()
 	self:CalcDamageCalculations()
 
 	if Menu.settingsW.useOptional:Value() == true then
@@ -986,6 +983,10 @@ function LeBlanc:OnTick()
 	if Menu.killsteal.killsteal:Value() == true then
 		self:KillSteal()
 	end
+end
+
+function LeBlanc:RCheck()
+	Spells.R.ready = myHero:CanUseSpell(Game.Slots.SPELL_4) == Game.SpellState.READY
 end
 
 function LeBlanc:OnProcessSpell(unit, spell)
@@ -1004,7 +1005,7 @@ function LeBlanc:SpecificSpellChecks()
 	if Menu.settingsW.useOptionalW:Value() == 1 then
 		if self:wUsed() and self:wrUsed() then
 			if CountEnemies(600, Spells.WR.startPos) < CountEnemies(600) then
-				if not Spells.Q.ready and not Spells.E.ready then
+				if not self.Q:CanCast()  and not self.E:CanCast() then
 					self.W:Cast()
 				end
 			end
@@ -1015,15 +1016,15 @@ function LeBlanc:SpecificSpellChecks()
 		end
 	elseif Menu.settingsW.useOptionalW:Value() == 3 or Menu.settingsW.useOptionalW:Value() == 4 then
 		if self:wUsed() and self:wrUsed() then
-			if not Spells.Q.ready and not Spells.E.ready then
+			if not self.Q:CanCast()  and not self.E:CanCast() then
 				self.W:Cast()
 			end
 		elseif self:wUsed() then
-			if not Spells.Q.ready and not Spells.E.ready then
+			if not self.Q:CanCast() and not self.E:CanCast() then
 				self.W:Cast()
 			end
 		elseif self:wrUsed() then
-			if not Spells.Q.ready and not Spells.E.ready then
+			if not self.Q:CanCast() and not self.E:CanCast() then
 				myHero:CastSpell(Game.Slots.SPELL_4)
 			end
 		end
@@ -1124,13 +1125,13 @@ function LeBlanc:CalcDamageCalculations()
 	if myHero.dead then return end
 	for i, enemy in ipairs(EnemyTable) do
 		if ValidTarget(enemy) then
-			local Qdmg = ((Spells.Q.ready and CalculateAPDamage("Q", 25, 30, 0.4, enemy)) or 0)
-			local Wdmg = ((Spells.W.ready and not self:wUsed() and CalculateAPDamage("W", 40, 45, 0.6, enemy)) or 0)
-			local Edmg = ((Spells.E.ready and CalculateAPDamage("E", 25, 15, 0.5, enemy)) or 0)
+			local Qdmg = ((self.Q:CanCast() and CalculateAPDamage("Q", 25, 30, 0.4, enemy)) or 0)
+			local Wdmg = ((self.W:CanCast() and not self:wUsed() and CalculateAPDamage("W", 40, 45, 0.6, enemy)) or 0)
+			local Edmg = ((self.E:CanCast() and CalculateAPDamage("E", 25, 15, 0.5, enemy)) or 0)
 			local Idmg = ((Iready and GetIgniteDamage()) or 0)
 			local RQdmg = Spells.R.ready and self.lastActivated == Spells.Q.spellname and self:SpellCalc("RQ")
 			local RWdmg = Spells.R.ready and not self:wrUsed() and self.lastActivated == Spells.W.spellname and self:SpellCalc("RW")
-			local QMark = Spells.Q.ready and self:SpellCalc("QMark")
+			local QMark = self.Q:CanCast() and self:SpellCalc("QMark")
 
 			if myHero.totalDamage > enemy.health then
 				KillText[i] = "MURDER HIM"
@@ -1191,9 +1192,9 @@ function LeBlanc:KillSteal()
 	for i = 1, Game.HeroCount(), 1 do
 		local enemy = Game.Hero(i)
 		if enemy.team ~= myHero.team and Menu.killsteal.enemies[enemy.charName]:Value() == true then
-			local Qdmg = ((Spells.Q.ready and CalculateAPDamage("Q", 25, 30, 0.4, enemy)) or 0)
-			local Wdmg = ((Spells.W.ready and not self:wUsed() and CalculateAPDamage("W", 40, 45, 0.6, enemy)) or 0)
-			local Edmg = ((Spells.E.ready and CalculateAPDamage("E", 25, 15, 0.5, enemy)) or 0)
+			local Qdmg = ((self.Q:CanCast() and CalculateAPDamage("Q", 25, 30, 0.4, enemy)) or 0)
+			local Wdmg = ((self.W:CanCast() and not self:wUsed() and CalculateAPDamage("W", 40, 45, 0.6, enemy)) or 0)
+			local Edmg = ((self.E:CanCast() and CalculateAPDamage("E", 25, 15, 0.5, enemy)) or 0)
 			local Idmg = ((Iready and GetIgniteDamage()) or 0)
 			local RQdmg = Spells.R.ready and self.lastActivated == Spells.Q.spellname and self:SpellCalc("RQ")
 			local RWdmg = Spells.R.ready and not self:wrUsed() and self.lastActivated == Spells.W.spellname and self:SpellCalc("RW")
@@ -1268,9 +1269,7 @@ function LeBlanc:ExtraMenu()
 	Menu.killsteal:Boolean("killstealR", "Use " .. Spells.R.name .. " (R)", true)
 	Menu.killsteal:Menu("enemies", "Perform KillSteal On")
 	for i, hero in ipairs(EnemyTable) do
-		if ValidTarget(hero) then
-			Menu.killsteal.enemies:Boolean(hero.charName, hero.charName, true)
-		end
+		Menu.killsteal.enemies:Boolean(hero.charName, hero.charName, true)
 	end
 
 	-- Misc
@@ -1280,8 +1279,13 @@ end
 
 -- Will do this in February 
 function LeBlanc:SmartCombo(target) 
-	
+	-- Soon™
 end
+
+
+
+
+
 
 
 --[[
@@ -1419,7 +1423,7 @@ function Blitzcrank:ExtraMenu()
 	-- Misc
 	Menu:Menu("misc", name .. "Misc")
 	Menu.misc:Menu("interrupt", "Interrupter")
-	Interrupter(Menu.misc.interrupt, self:BlitzInterrupter(unit))
+	Interrupter(Menu.misc.interrupt, function(unit) self:BlitzInterrupter(unit) end)
 end
 
 function BlitzCrank:BlitzInterrupter(unit)
@@ -1427,6 +1431,9 @@ function BlitzCrank:BlitzInterrupter(unit)
 		self.Q:Cast(unit)
 	end
 end
+
+
+
 
 
 
@@ -1463,6 +1470,7 @@ function Ryze:__init()
 	self.R = Spell(Game.Slots.SPELL_4)
 
 	self:ExtraMenu()
+	self.lastValueMenu = Menu.combo.settingsR.RMode:Value()
 
 	ts = TargetSelector("LESS_AP", Spells.Q.range, Menu) 
 
@@ -1482,8 +1490,14 @@ function Ryze:OnDraw()
 		end 
 	end 
 end
+
 function Ryze:OnTick()
+	self:MenuChecks()
+
+	if myHero.dead then return end
+
 	self:CalcDamageCalculations()
+
 	if Menu.killsteal.killsteal:Value() == true then
 		self:KillSteal()
 	end
@@ -1492,6 +1506,9 @@ end
 function Ryze:Combo()
 	if myHero.dead then return end
 	if target ~= nil then
+		if Menu.combo.comboR:Value() == true and self:RMangement(target) then
+			self.R:Cast()
+		end
 		if Menu.combo.comboMode:Value() == 1 then
 			self:ComboLong(target)
 		else
@@ -1513,16 +1530,20 @@ function Ryze:ComboBurst(target)
 	if Menu.combo.comboQ:Value() == true then
 		self.E:Cast(target)
 	end
-
 end
 
 function Ryze:ComboLong(target)
 	if Menu.combo.comboQ:Value() == true then
 		self.Q:Cast(target)
 	end
+
+	if myHero:GetSpellData(Game.Spell.SPELL_1).level >= 1 and myHero:GetSpellData(Game.Spell.SPELL_1).currentCd < 2 and not self.E:CanCast() and self.W:CanCast() then return end
+
 	if Menu.combo.comboE:Value() == true then
 		self.W:Cast(target)
 	end
+	if myHero:GetSpellData(Game.Spell.SPELL_1).level >= 1 and myHero:GetSpellData(Game.Spell.SPELL_1).currentCd < 2 and not self.W:CanCast() and self.E:CanCast() then return end
+
 	if Menu.combo.comboQ:Value() == true then
 		self.Q:Cast(target)
 	end
@@ -1549,10 +1570,12 @@ end
 function Ryze:KillSteal()
 	for i, hero in ipairs(EnemyTable) do
 		if ValidTarget(hero) then
-			local Qdmg = Spells.Q.ready and self:CalculateAPDamage("Q", hero)
-			local Wdmg = Spells.W.ready and self:CalculateAPDamage("W", hero)
-			local Edmg = Spells.E.ready and self:CalculateAPDamage("E", hero)
-			if Qdmg > enemy.health then
+			local Qdmg = self.Q:CanCast() and self:CalculateAPDamage("Q", hero)
+			local Wdmg = self.W:CanCast() and self:CalculateAPDamage("W", hero)
+			local Edmg = self.R:CanCast()  and self:CalculateAPDamage("E", hero)
+			if Edmg > enemy.health then
+				self.E:Cast(hero)
+			elseif Qdmg > enemy.health then
 				self.Q:Cast(hero)
 			elseif Wdmg > enemy.health then
 				self.W:Cast(hero)
@@ -1579,9 +1602,9 @@ end
 function Ryze:CalcDamageCalculations()
 	for i, enemy in ipairs(EnemyTable) do
 		if ValidTarget(hero) then
-			local Qdmg = Spells.Q.ready and self:CalculateAPDamage("Q", hero)
-			local Wdmg = Spells.W.ready and self:CalculateAPDamage("W", hero)
-			local Edmg = Spells.E.ready and self:CalculateAPDamage("E", hero)
+			local Qdmg = self.Q:CanCast() and self:CalculateAPDamage("Q", hero)
+			local Wdmg = self.W:CanCast() and self:CalculateAPDamage("W", hero)
+			local Edmg = self.E:CanCast() and self:CalculateAPDamage("E", hero)
 			if myHero.totalDamage > enemy.health then
 				KillText[i] = "Murder him"
 			elseif Qdmg > enemy.health then
@@ -1589,7 +1612,7 @@ function Ryze:CalcDamageCalculations()
 			elseif Wdmg > enemy.health then
 				KillText[i] = "W = kill"
 			elseif (Edmg * 2) > enemy.health then
-				KillText[i] = "2E = kill"
+				KillText[i] = "E = kill"
 			elseif Qdmg + Wdmg > enemy.health then
 				KillText[i] = "Q + W = kill"
 			elseif Qdmg + Wdmg + Edmg > enemy.health then
@@ -1598,12 +1621,35 @@ function Ryze:CalcDamageCalculations()
 				KillText[i] = "Q + W + Q = kill"
 			elseif Qdmg + Wdmg + Edmg + Qdmg > enemy.health then
 				KillText[i] = "Q + W + E + Q = kill"
+			elseif Qdmg + Wdmg + Qdmg + Edmg + Qdmg > enemy.health then
+				KillText[i] = "Q + W + Q + E + Q = kill"
 			else
 				KillText[i] = "Harass him"
 			end
 		end
 	end
 end
+
+function Ryze:RMangement(target)
+	return Menu.combo.settingsR.RMode:Value() == 1 or (Menu.combo.settingsR.RMode:Value() == 2 and Menu.combo.settingsR.hitX >= self:CalcEnemiesNearTarget(target, Spells.R.radius))
+end
+
+function Ryze:CalcEnemiesNearTarget(target, radius)
+	local count = 1
+	for i, enemy in ipairs(EnemyTable) do
+		if enemy ~= target then
+			if target:distanceTo(enemy) < radius then 
+				count = count + 1
+			end
+		end
+	end
+	return count
+end
+
+function Ryze:Gapcloser(unit) 
+	self.W:Cast(unit)
+end
+
 
 function Ryze:ExtraMenu()
 	-- Combo
@@ -1613,11 +1659,18 @@ function Ryze:ExtraMenu()
 	Menu.combo:Boolean("comboR", "Use " .. Spells.R.name .. " (R)", true)
 	Menu.combo:Section("comboMode", DrawFont("Modes"))
 	Menu.combo:DropDown("comboMode", "Mode", 1, {"Burst", "Long"})
+	Menu.combo:Menu("settingsR", "R Settings")
+	Menu.combo.settingsR:DropDown("RMode", "Mode", 1, {"Instantly", "Hit x"})
+	Menu.combo.settingsR:Slider("hitX", "Min X amount of champs", 2, 1, 5, 1)
 
 	-- Harass
 	Menu.harass:Boolean("harassQ", "Use " .. Spells.Q.name .. " (Q)", true)
 	Menu.harass:Boolean("harassW", "Use " .. Spells.W.name .. " (W)", true)
 	Menu.harass:Boolean("harassE", "Use " .. Spells.E.name .. " (E)", true)
+
+	-- Farm
+	Menu.farm:Boolean("farmQ", "Use " .. Spells.Q.name .. " (Q)", true)
+	Menu.farm:Boolean("farmW", "Use " .. Spells.W.name .. " (W)", true)
 
 	-- Laneclear
 	Menu.laneclear:Boolean("laneclearW", "Use " .. Spells.W.name .. " (W)", true)
@@ -1633,15 +1686,41 @@ function Ryze:ExtraMenu()
 
 	-- Misc
 	Menu:Menu("misc", name .. "Misc")
+	Menu.misc:Menu("gapcloser", "GapCloser")
+	Gapcloser(Menu.misc.gapcloser, function(unit) self:Gapcloser(unit) end)
 
 	--Draws
-	Menu.draw:Separator()
 	Menu.draw:Boolean("drawKilltext", "Draw KillText", false)
+	Menu.draw:Separator()
+end
+
+function Ryze:MenuChecks()
+	if self.lastValueMenu ~= Menu.combo.settingsR.RMode:Value() then
+		if Menu.combo.settingsR.Mode:Value() == 1 then
+			Menu.combo.settingsR.hitX:Hide(true)
+		else
+			Menu.combo.settingsR.hitX:Hide(false)
+		end
+		self.lastValueMenu = Menu.combo.SettingsR.RMode:Value()
+	end
 end
 
 
 
+--[[
 
+		Script details:
+			Series: Totally Series AIO
+			Champion: Lux
+			Author: Totally Legit
+			Designed for: Cloudrop
+			Current version: 0.1	
+
+
+		Changelog:
+			0.1
+				Started coding
+--]]
 class 'Lux'
 function Lux:__init()
 	Spells = 	{
@@ -1654,30 +1733,42 @@ function Lux:__init()
 	-- Drawing LeBlancs Menu
 	self:ExtraMenu()
 
+	-- Intializing max range just to be sure for Menu
+	self.maxRange = Spells.R.range
+
 	-- Initializing Spells
 	self.Q = Spell(Game.Slots.SPELL_1, Spells.Q.range)
-	self.W:SetSkillShot(Spells.Q.delay, Spells.Q.radius, Spells.Q.speed, false, "normal")
 	self.W = Spell(Game.Slots.SPELL_2, Spells.W.range)
 	self.E = Spell(Game.Slots.SPELL_3, Spells.E.range)
-	self.E:SetSkillShot(Spells.E.delay, Spells.E.radius, Spells.E.speed, true, "aoe")
+	self.E:SetSkillShot(Spells.E.delay, Spells.E.radius, Spells.E.speed, false, "aoe")
+	self.R = Spell(Game.Slots.SPELL_4, Spells.R.range)
+	self.R:SetSkillShot(Spells.E.delay, Spells.E.radius, Spells.E.speed, false, "normal")
 
-
+	-- Ball information
 	self.EBall = nil
 
 	-- Initializing TargetSelector
 	ts = TargetSelector("LESS_AP", Spells.Q.range, Menu) 
-			
+	
+	-- Making the change smoother
+	self.lastRange = Menu.lazer.range:Value()
+
 	-- Regular Callback binds
 	Callback.Bind("Tick", function() self:OnTick() end)
 	Callback.Bind("CreateObj", function(obj) self:OnCreateObj(obj) end)
 	Callback.Bind("DeleteObj", function(obj) self:OnDeleteObj(obj) end)
 	Callback.Bind("ProcessSpell", function(unit, spell) self:OnProcessSpell(unit, spell) end)
 	Callback.Bind("Draw", function() self:OnDraw() end)
-	--Callback.Bind("GainBuff", function(unit, buff) self:OnGainBuff(unit, buff) end)
-	--Callback.Bind("LoseBuff", function(unit, buff) self:OnLoseBuff(unit, buff) end)
 end
 
 function Lux:OnTick()
+
+	if self.lastRange ~= Menu.lazer.range:Value() then
+		Spells.R.range = Menu.lazer.range:Value()
+		self.R:AdjustRange(Spells.R.range)
+		self.lastRange = Spells.R.range
+	end
+
 	self:CalcDamageCalculations()
 
 	if Menu.killsteal.killsteal:Value() == true then
@@ -1685,7 +1776,7 @@ function Lux:OnTick()
 	end
 
 	if self.EBall then
-		self:ProcE()
+		self:ProcE(target)
 	end
 end
 
@@ -1707,22 +1798,45 @@ function Lux:Combo()
 		if Menu.comboItems:Value() == true then
 			UseItems(target)
 		end
+
+		if Menu.combo.comboQ:Value() == true then
+			self.Q:Cast(target)
+		end
+
+		if Menu.combo.comboPassive:Value() and InAARange(target) and TargetHaveBuff(Buffname, target) then return end
+		
+		if Menu.combo.comboE:Value() == true then
+			self.E:Cast(target)
+		end
+
+		if Menu.combo.comboPassive:Value() and InAARange(target) and TargetHaveBuff(Buffname, target) then return end
+		if Menu.combo.comboR:Value() == true  then
+			if not self:CanComboR(target) then return end
+			self.R:Cast(target)
+		end
 	end
 end
 
-function Lux:ProcE()
-	if Spells.E.ready and CountEnemies(Spells.E.radius, self.EBall) then
-		self.E:Cast()
+function Lux:ProcE(target)
+	if myHero.dead then return end
+	if target and target.type == myHero.type then
+		if self.E:CanCast() and GetCustomDistance(self.EBall, target) <= Spells.E.radius then
+			self.E:Cast()
+		end
+	else
+		if self.E:CanCast() and CountEnemies(Spells.E.radius, self.EBall) >= 1 then
+			self.E:Cast()
+		end
 	end
 end
 
 function Lux:Harass()
 	if myHero.dead then return end
 	if target ~= nil and ValidTarget(target) then
-		if Menu.harass.harassQ:Value() == true and not (InAARange(target) and TargetHaveBuff(Buffname, target)) then
+		if Menu.harass.harassQ:Value() == true and not (Menu.harass.harassPassive:Value() and InAARange(target) and TargetHaveBuff(Buffname, target)) then
 			self.Q:Cast(target)
 		end
-		if Menu.harass.harassE:Value() == true and not ((InAARange(target) and TargetHaveBuff(Buffname, target))) then
+		if Menu.harass.harassE:Value() == true and not (Menu.harass.harassPassive:Value() and InAARange(target) and TargetHaveBuff(Buffname, target)) then
 			self.E:Cast(target)
 		end
 	end
@@ -1742,24 +1856,79 @@ function Lux:OnDraw()
 	end 
 end
 
+
 function Lux:CalcDamageCalculations()
 	for i, enemy in ipairs(EnemyTable) do
 		if ValidTarget(enemy) then
-			--- To do
+			local Qdmg = Menu.killsteal.killstealQ:Value() and self.Q:CanCast() and CalculateAPDamage("Q", 10, 50, 0.7, enemy)
+			local Edmg = Menu.killsteal.killstealE:Value() and self.W:CanCast() and CalculateAPDamage("E", 15, 45, 0.6, enemy)
+			local Rdmg = Menu.killsteal.killstealR:Value() and self.R:CanCast() and CalculateAPDamage("R", 200, 100, 0.75, enemy)
+			local Pdmg = (self.Q:CanCast() or self.E:CanCast()) and self:PassiveDamage()
+			if myHero.totalDamage > enemy.health then
+				KillText[i] = "Murder him"
+			elseif Qdmg > enemy.health then
+				KillText[i] = "Q = kill"
+			elseif Edmg > enemy.health then
+				KillText[i] = "E = kill"
+			elseif Qdmg + Pdmg > enemy.health then
+				KillText[i] = "Q + P = kill"
+			elseif Edmg + Pdmg > enemy.health then
+				KillText[i] = "E + P = kill"
+			elseif Qdmg + Edmg > enemy.health then
+				KillText[i] = "Q + E = kill"
+			elseif Qdmg + Pdmg + Edmg > enemy.health then
+				KillText[i] = "Q + P + E = kill"
+			elseif Qdmg + Pdmg + Edmg + Pdmg > enemy.health then
+				KillText[i] = "Q + P + E + P = kill"
+			elseif Qdmg + Edmg + Rdmg > enemy.health then
+				KillText[i] = "Q + E + R = kill"
+			elseif Qdmg + Pdmg + Edmg + Rdmg + Pdmg > enemy.health then
+				KillText[i] = "Q + P + E + P + R + P = kill"
+			else
+				KillText[i] = "Harass him"
+			end
 		end
 	end
 end
--- Specific LeBlancs Menu
-function Lux:ExtraMenu()
 
+function Lux:KillSteal()
+	for i, enemy in ipairs(EnemyTable) do
+		if ValidTarget(enemy) then
+			if Qdmg > enemy.health then
+				self.Q:Cast(enemy)
+			elseif self.EBall and Edmg > enemy.health then
+				self.EProc(enemy)
+			elseif Edmg > enemy.health then
+				self.E:Cast(enemy)
+			elseif Rdmg > enemy.health then
+				self.R:Cast(enemy)
+			end
+		end
+	end
+end
+
+function Lux:CanComboR(target)
+		return not (Menu.lazer.combo:Value() == 2 and CalculateAPDamage() <= target.health) 
+end
+
+function Lux:PassiveDamage()
+	return ((10 + (8 * myHero.level)) + (myHero.ap * 0.2))
+end
+
+
+function Lux:ExtraMenu()
 	-- Combo
 	Menu.combo:Boolean("comboQ", "Use " .. Spells.Q.name .. " (Q)", true)
 	Menu.combo:Boolean("comboE", "Use " .. Spells.E.name .. " (E)", true)
 	Menu.combo:Boolean("comboR", "Use " .. Spells.R.name .. " (R)", true)
+	Menu.combo:Separator()
+	Menu.combo:Boolean("comboPassive", "Proc Passive", false)
 
 	-- Harass
 	Menu.harass:Boolean("harassQ", "Use " .. Spells.Q.name .. " (Q)", true)
 	Menu.harass:Boolean("harassE", "Use " .. Spells.E.name .. " (E)", true)
+	Menu.combo:Separator()
+	Menu.harass:Boolean("harassPassive", "Proc Passive", false)
 
 	--Farming
 	Menu.farm:Boolean("farmQ", "Use " .. Spells.Q.name .. " (Q)", true)
@@ -1770,36 +1939,44 @@ function Lux:ExtraMenu()
 
 	--Drawings
 	Menu.draw:Boolean("drawKilltext", "Draw KillText", false)
+	Menu.draw:Separator()
 
-	
+	-- Ult Settings
+	Menu:Menu("lazer", Spells.R.name .. " settings")
+	Menu.lazer:Number("range", "Range", 1500, 100, self.maxRange)
+	Menu.lazer:Separator()
+	Menu.lazer:DropDown("combo", "Use in Combo", 1, {"Instantly", "KillAble"})
+
 	-- Killsteal settings
 	Menu:Menu("killsteal", name .. "KillSteal")
+	Menu.killsteal:Section("killstealSection1", "Activation")
 	Menu.killsteal:Boolean("killsteal", "Perform KillSteal", false)
+	Menu.killsteal:Section("killstealSection2", "Spell Settings")
 	Menu.killsteal:Boolean("killstealQ", "Use " .. Spells.Q.name .. " (Q)", true)
 	Menu.killsteal:Boolean("killstealE", "Use " .. Spells.E.name .. " (E)", true)
 	Menu.killsteal:Boolean("killstealR", "Use " .. Spells.R.name .. " (R)", true)
+	Menu.killsteal:Section("killstealSection2", "Enemies")
 	Menu.killsteal:Menu("enemies", "Perform KillSteal On")
 	for i, hero in ipairs(EnemyTable) do
-		if ValidTarget(hero) then
-			Menu.killsteal.enemies:Boolean(hero.charName, hero.charName, true)
-		end
+		Menu.killsteal.enemies:Boolean(hero.charName, hero.charName, true)
 	end
 
 	-- Misc
 	Menu:Menu("misc", name .. "Misc")
+	Menu.misc:Menu("antigapcloser", "Anti-GapCloser")
+	Menu.misc:Separator()
+	Menu.misc:Menu("interrupter", "Interrupter")
+	Interrupter(Menu.misc.interrupter, function(unit) self:Interrupter(unit) end)
+	Gapcloser(Menu.misc.antigapcloser, function(unit) self:Gapcloser(unit) end)
 end
 
+function Lux:Interrupter(unit)
+	self.Q:Cast(unit)
+end
 
-
-
-
-
-
-
-
-
-
-
+function Lux:Gapcloser(unit) 
+	self.Q:Cast(unit)
+end
 
 
 
@@ -1889,7 +2066,7 @@ function TargetSelector:GetTarget(range)
 	self.mode = self.menu.mode:Value()
 	local range = range and range or self.range
 	local target = nil
-	if self.selected and self.selected.type == myHero.type and myHero:DistanceTo(self.selected) <= self.range then return self.selected end
+	if self.selected and self.selected.type == myHero.type and myHero:DistanceTo(self.selected) <= self.range  and self.selected.visible then return self.selected end
 
 	if self.mode == 1 then
 		target = self:Mode1(range)
@@ -2091,7 +2268,7 @@ function Spell:Cast(param1, param2, param3)
 				return true
 			end
 		else
-			if self:CanCast() then
+			if self:CanCast() and self:CanCast() then
 				myHero:CastSpell(self.slot)
 				return true
 			end
@@ -2120,10 +2297,9 @@ function Interrupter:__init(menu, cb)
 					    ["AceInTheHole"] 			   = { charName = "Caitlyn",      duration = 1.0}
 					}
 	self.ActiveSpells = {}
+	self.callbacks = {}
 
 	self:ApplyToMenu(menu)
-
-	self.callbacks = {}
 
 	if cb then
 		table.insert(self.callbacks, cb)
@@ -2134,9 +2310,8 @@ function Interrupter:__init(menu, cb)
 
 end
 
-function Interrupter:ApplyToMenu(menu)
+function Interrupter:ApplyToMenu(Menu)
 	local hasAdded = false
-	local Menu = menu
 
 	Menu:Boolean("gapclose", "GapCloser Spells", false)
 	for spell, data in pairs(self.interrupt) do
@@ -2160,7 +2335,7 @@ end
 
 function Interrupter:OnProcessSpell(unit, spell)
 	if Menu.gapclose:Value() == true then
-		if self.menu and self.menu[spell.name] then
+		if self.menu and self.menu[spell.name] and unit.team ~= myHero.team then
 			local data = {unit = unit, endTime = os.clock + self.interrupt[spell.name].duration}
 			table.insert(self.activeSpells, data)
 		end
@@ -2263,7 +2438,7 @@ end
 function Gapcloser:OnProcessSpell(unit, spell)
 	if self.Menu.gapcloser then
 		local spellname = spell.name:lower()
-		if self.Menu[spellname] then
+		if self.Menu and self.Menu[spellname] and unit.team ~= myHero.team then
 			if myHero:DistanceTo(unit) > myHero:DistanceTo(spell.endPos) then
 				self:Callback(unit)
 			end
@@ -2429,7 +2604,7 @@ function CastItem(ItemID, var1, var2)
 end
 
 function ValidTarget(target)
-	return target.team ~= myHero.team and not target.dead and target.type == myHero.type and target.visible
+	return target.team ~= myHero.team and not target.dead and target.type == myHero.type and target.visible and not TargetHaveBuff("UndyingRage", target) and not TargetHaveBuff("JudicatorIntervention", target)
 end
 
 function CalculateAPDamage(skill, base_damage, damage, APratio, target)
